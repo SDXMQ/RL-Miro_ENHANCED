@@ -1,0 +1,10 @@
+.\miro_env\Scripts\Activate # 가상환경 실행 터미널 명령어
+
+# requirements.txt에 기록된 모든 라이브러리와 버전을 한 번에 설치
+pip install -r requirements.txt
+
+# 만들어야 하는 것 :
+# 
+
+# miro_1 : (4,☆) 이동 시각화
+# miro_2 : 결과만 출력
