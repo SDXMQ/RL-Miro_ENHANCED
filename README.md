@@ -1,5 +1,7 @@
 # RL-Miro Enhanced (Reinforcement Learning Maze-Solving Simulator)
 
+🌐 [한국어 문서 (Korean Version)](./README_ko.md)
+
 RL-Miro Enhanced is an **educational reinforcement learning simulation program** with a Pygame-based GUI. It visualizes the trial-and-error process of an agent discovering the optimal path through a grid maze.
 
 ---

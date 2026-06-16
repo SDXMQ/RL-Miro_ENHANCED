@@ -1,5 +1,7 @@
 # RL-Miro Enhanced (강화학습 미로 해결 시뮬레이터)
 
+🌐 [English Version](./README.md)
+
 RL-Miro Enhanced는 Pygame 기반 GUI를 통해 에이전트가 미로를 스스로 학습하고 해결해 나가는 과정을 시각화하여 관찰할 수 있는 **강화학습 교육용 시뮬레이션 프로그램**입니다. 
 
 ---
