@@ -1,4 +1,4 @@
-from gui import MazeApp
+from ui.gui import MazeApp
 
 def main():
     """
