@@ -249,6 +249,12 @@ class MazeApp:
         # Sarsa용 다음 행동 캐시
         self._sarsa_next_action = None
 
+        # 학습 결과 기록용 로그 파일 설정
+        self.log_filepath = "rl_training.log"
+        with open(self.log_filepath, "a", encoding="utf-8") as f:
+            f.write("\n=== 학습 시뮬레이션 세션 시작 ===\n")
+            f.write("Episode,Steps,SuccessRate,Alpha,Gamma,Epsilon,Algorithm,MazeSize\n")
+
         # UI 요소 생성
         self.setup_ui()
 
@@ -608,6 +614,12 @@ class MazeApp:
             if self.step_count < self.best_steps:
                 self.best_steps = self.step_count
             self.spawn_celebration_particles()
+            
+            # 로그 기록
+            success_rate = self.success_count / self.episode_count
+            with open(self.log_filepath, "a", encoding="utf-8") as f:
+                f.write(f"{self.episode_count},{self.step_count},{success_rate:.4f},{self.agent.alpha},{self.agent.gamma},{self.agent.epsilon:.4f},{self.algorithm},{self.env.height}x{self.env.width}\n")
+            
             self.agent.decay_epsilon()
             self.state = self.env.reset()
             self.step_count = 0
@@ -618,6 +630,12 @@ class MazeApp:
         elif self.step_count >= 300:
             self.episode_count += 1
             self.history_steps.append(self.step_count)
+            
+            # 로그 기록
+            success_rate = self.success_count / self.episode_count
+            with open(self.log_filepath, "a", encoding="utf-8") as f:
+                f.write(f"{self.episode_count},{self.step_count},{success_rate:.4f},{self.agent.alpha},{self.agent.gamma},{self.agent.epsilon:.4f},{self.algorithm},{self.env.height}x{self.env.width}\n")
+            
             self.agent.decay_epsilon()
             self.state = self.env.reset()
             self.step_count = 0
@@ -660,11 +678,23 @@ class MazeApp:
                     self.history_steps.append(step)
                     if step < self.best_steps:
                         self.best_steps = step
+                    
+                    # 로그 기록
+                    success_rate = self.success_count / self.episode_count
+                    with open(self.log_filepath, "a", encoding="utf-8") as f:
+                        f.write(f"{self.episode_count},{step},{success_rate:.4f},{self.agent.alpha},{self.agent.gamma},{self.agent.epsilon:.4f},{self.algorithm},{self.env.height}x{self.env.width}\n")
+                    
                     self.agent.decay_epsilon()
                     break
                 elif step >= 300:
                     self.episode_count += 1
                     self.history_steps.append(step)
+                    
+                    # 로그 기록
+                    success_rate = self.success_count / self.episode_count
+                    with open(self.log_filepath, "a", encoding="utf-8") as f:
+                        f.write(f"{self.episode_count},{step},{success_rate:.4f},{self.agent.alpha},{self.agent.gamma},{self.agent.epsilon:.4f},{self.algorithm},{self.env.height}x{self.env.width}\n")
+                    
                     self.agent.decay_epsilon()
                     break
 
@@ -690,11 +720,22 @@ class MazeApp:
 
         if done:
             self.spawn_celebration_particles()
+            
+            # 테스트 결과 로그 기록
+            with open(self.log_filepath, "a", encoding="utf-8") as f:
+                f.write(f"TEST_SUCCESS,{self.step_count},1.0000,0.0,0.0,0.0000,TEST_{self.algorithm},{self.env.height}x{self.env.width}\n")
+            
             self.current_state = MazeApp.STATE_IDLE
             self.state = self.env.reset()
+            self.step_count = 0
         elif self.step_count >= 300:
+            # 테스트 결과 로그 기록
+            with open(self.log_filepath, "a", encoding="utf-8") as f:
+                f.write(f"TEST_FAIL,{self.step_count},0.0000,0.0,0.0,0.0000,TEST_{self.algorithm},{self.env.height}x{self.env.width}\n")
+            
             self.current_state = MazeApp.STATE_IDLE
             self.state = self.env.reset()
+            self.step_count = 0
 
     # ──────────────────────────────────────────
     # 에디터 입력 처리
@@ -761,39 +802,39 @@ class MazeApp:
                 pygame.draw.rect(self.screen, COLOR_GRID_LINE, cell_rect, 1)
 
                 # 특수 타일 장식
-                inner = cell_rect.inflate(-8, -8)
+                inner_margin = max(2, self.cell_w // 8)
+                inner = cell_rect.inflate(-inner_margin * 2, -inner_margin * 2)
+                border_rad = max(2, self.cell_w // 10)
                 if (r, c) == self.env.start_pos:
-                    pygame.draw.rect(self.screen, COLOR_START, inner, border_radius=6)
+                    pygame.draw.rect(self.screen, COLOR_START, inner, border_radius=border_rad)
                 elif (r, c) == self.env.goal_pos:
-                    pygame.draw.rect(self.screen, COLOR_GOAL, inner, border_radius=6)
+                    pygame.draw.rect(self.screen, COLOR_GOAL, inner, border_radius=border_rad)
                 elif cell_type == 4:  # 함정
                     color = COLOR_TRAP if self.env.trap_enabled else COLOR_TRAP_OFF
-                    pygame.draw.rect(self.screen, color, inner, border_radius=4)
+                    pygame.draw.rect(self.screen, color, inner, border_radius=border_rad)
                     # X 표시
                     x1, y1 = inner.topleft
                     x2, y2 = inner.bottomright
-                    pygame.draw.line(self.screen, (255, 200, 200), (x1 + 2, y1 + 2), (x2 - 2, y2 - 2), 2)
-                    pygame.draw.line(self.screen, (255, 200, 200), (x2 - 2, y1 + 2), (x1 + 2, y2 - 2), 2)
+                    line_thick = max(1, self.cell_w // 16)
+                    pygame.draw.line(self.screen, (255, 200, 200), (x1 + 2, y1 + 2), (x2 - 2, y2 - 2), line_thick)
+                    pygame.draw.line(self.screen, (255, 200, 200), (x2 - 2, y1 + 2), (x1 + 2, y2 - 2), line_thick)
                 elif cell_type == 5:  # 보너스
                     if (r, c) in self.env.active_bonuses:
-                        pygame.draw.rect(self.screen, COLOR_BONUS, inner, border_radius=4)
+                        pygame.draw.rect(self.screen, COLOR_BONUS, inner, border_radius=border_rad)
                         # ★ 표시
                         cx, cy = inner.center
-                        self._draw_star(cx, cy, inner.width // 3)
+                        self._draw_star(cx, cy, max(3, inner.width // 3))
                     else:
-                        pygame.draw.rect(self.screen, COLOR_BONUS_OFF, inner, border_radius=4)
+                        pygame.draw.rect(self.screen, COLOR_BONUS_OFF, inner, border_radius=border_rad)
 
         # 에이전트 그리기
         if self.current_state != MazeApp.STATE_EDITING:
             agent_r, agent_c = self.state
-            agent_rect = pygame.Rect(
-                self.maze_rect.x + agent_c * self.cell_w,
-                self.maze_rect.y + agent_r * self.cell_h,
-                self.cell_w,
-                self.cell_h
-            ).inflate(-12, -12)
-            pygame.draw.circle(self.screen, COLOR_AGENT, agent_rect.center, agent_rect.width // 2)
-            pygame.draw.circle(self.screen, (255, 255, 255), agent_rect.center, agent_rect.width // 4)
+            cx = self.maze_rect.x + agent_c * self.cell_w + self.cell_w // 2
+            cy = self.maze_rect.y + agent_r * self.cell_h + self.cell_h // 2
+            r = max(4, self.cell_w // 3)
+            pygame.draw.circle(self.screen, COLOR_AGENT, (cx, cy), r)
+            pygame.draw.circle(self.screen, (255, 255, 255), (cx, cy), max(2, r // 2))
 
     def _draw_star(self, cx, cy, r):
         """작은 별 모양 그리기"""

@@ -1,0 +1,27 @@
+# Python 캐시
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# 가상환경
+miro_env/
+venv/
+.venv/
+env/
+
+# 로그 및 결과
+*.log
+rl_training.log
+
+# 모델 파일
+*.npz
+
+# IDE 및 설정
+.vscode/
+.idea/
+
+# OS 관련
+.DS_Store
+Thumbs.db
