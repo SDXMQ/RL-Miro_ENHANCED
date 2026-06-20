@@ -34,11 +34,21 @@ def generate_maze_dfs(height, width):
         if not found:
             stack.pop()
 
-    # 시작점, 목표점 설정
-    maze[1, 1] = 2
-    # 목표점: 우하단 근처의 열린 칸 찾기
-    goal_r, goal_c = h - 2, w - 2
-    maze[goal_r, goal_c] = 3
-
     # 원래 요청 크기에 맞게 잘라내기
-    return maze[:height, :width]
+    sliced_maze = maze[:height, :width].copy()
+
+    # 짝수 크기일 때 테두리 벽(1) 채워주기
+    if height % 2 == 0:
+        sliced_maze[height - 1, :] = 1
+    if width % 2 == 0:
+        sliced_maze[:, width - 1] = 1
+
+    # 시작점, 목표점 설정
+    sliced_maze[1, 1] = 2
+    
+    # 목표점 위치 계산 (홀수 인덱스 영역 안이어야 통로에 위치함)
+    goal_r = height - 2 if height % 2 == 1 else height - 3
+    goal_c = width - 2 if width % 2 == 1 else width - 3
+    sliced_maze[goal_r, goal_c] = 3
+
+    return sliced_maze

@@ -42,6 +42,8 @@ class RLAgent:
         """단일 Q-테이블 모드에서의 setter"""
         if self.algorithm != 'double_q':
             self._q_table = value
+        else:
+            raise AttributeError("Double Q-러닝 모드에서는 q_table을 직접 수정할 수 없으며, q_table_a와 q_table_b를 각각 수정해야 합니다.")
 
     def get_action(self, state, valid_actions):
         """
@@ -65,7 +67,7 @@ class RLAgent:
         best_actions = [a for a, q in zip(valid_actions, q_values) if q == max_q]
         return random.choice(best_actions)
 
-    def update_q(self, state, action, reward, next_state, next_valid_actions, next_action=None):
+    def update_q(self, state, action, reward, next_state, next_valid_actions, done, next_action=None):
         """
         선택된 알고리즘에 따라 Q-테이블을 업데이트합니다.
         - q_learning: Q(s,a) += α * (r + γ * max Q(s',a') - Q(s,a))
@@ -76,16 +78,16 @@ class RLAgent:
         nx, ny = next_state
 
         if self.algorithm == 'q_learning':
-            self._update_q_learning(x, y, action, reward, nx, ny, next_valid_actions)
+            self._update_q_learning(x, y, action, reward, nx, ny, next_valid_actions, done)
         elif self.algorithm == 'sarsa':
             self._update_sarsa(x, y, action, reward, nx, ny, next_action)
         elif self.algorithm == 'double_q':
-            self._update_double_q(x, y, action, reward, nx, ny, next_valid_actions)
+            self._update_double_q(x, y, action, reward, nx, ny, next_valid_actions, done)
 
-    def _update_q_learning(self, x, y, action, reward, nx, ny, next_valid_actions):
+    def _update_q_learning(self, x, y, action, reward, nx, ny, next_valid_actions, done):
         """표준 Q-러닝 업데이트"""
-        # 다음 상태의 최대 Q값 계산 (유효한 행동 중에서만)
-        if next_valid_actions:
+        # 다음 상태의 최대 Q값 계산 (종료 상태가 아니고 유효한 행동이 있을 때만)
+        if not done and next_valid_actions:
             max_next_q = max([self._q_table[nx, ny, a] for a in next_valid_actions])
         else:
             max_next_q = 0.0
@@ -108,9 +110,9 @@ class RLAgent:
             reward + self.gamma * next_q - self._q_table[x, y, action]
         )
 
-    def _update_double_q(self, x, y, action, reward, nx, ny, next_valid_actions):
+    def _update_double_q(self, x, y, action, reward, nx, ny, next_valid_actions, done):
         """Double Q-러닝 업데이트: 두 테이블 교차 사용으로 과대추정 편향 방지"""
-        if not next_valid_actions:
+        if done or not next_valid_actions:
             next_q = 0.0
             # 어느 테이블이든 동일하게 업데이트
             if random.random() < 0.5:
@@ -125,14 +127,16 @@ class RLAgent:
 
         if random.random() < 0.5:
             # 테이블 A 업데이트: A로 최적 행동 선택, B의 값으로 타겟 계산
-            best_action = max(next_valid_actions, key=lambda a: self.q_table_a[nx, ny, a])
+            q_vals = self.q_table_a[nx, ny, next_valid_actions]
+            best_action = next_valid_actions[np.argmax(q_vals)]
             next_q = self.q_table_b[nx, ny, best_action]
             self.q_table_a[x, y, action] += self.alpha * (
                 reward + self.gamma * next_q - self.q_table_a[x, y, action]
             )
         else:
             # 테이블 B 업데이트: B로 최적 행동 선택, A의 값으로 타겟 계산
-            best_action = max(next_valid_actions, key=lambda a: self.q_table_b[nx, ny, a])
+            q_vals = self.q_table_b[nx, ny, next_valid_actions]
+            best_action = next_valid_actions[np.argmax(q_vals)]
             next_q = self.q_table_a[nx, ny, best_action]
             self.q_table_b[x, y, action] += self.alpha * (
                 reward + self.gamma * next_q - self.q_table_b[x, y, action]

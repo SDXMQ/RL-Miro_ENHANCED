@@ -91,6 +91,10 @@ class MazeEnv:
         """
         에이전트에게 행동을 수행하게 하고, 다음 상태, 보상, 종료 여부를 반환합니다.
         """
+        # 현재 위치에서 이동 가능한 유효한 경로가 전혀 없는 고립 상태인 경우 즉시 종료
+        if not self.get_valid_actions(self.current_pos):
+            return self.current_pos, -100, True
+
         if action_idx < 0 or action_idx >= len(self.ACTIONS):
             raise ValueError(f"유효하지 않은 행동 인덱스: {action_idx}")
 
